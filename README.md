@@ -66,9 +66,10 @@ SentimentScope is a modern, full-stack AI application designed to analyze the se
 4. Create a `.env` file in the `backend/` directory (if not already present):
    ```env
    DATABASE_URL=sqlite:///./sentiment.db
-   CORS_ORIGINS=http://localhost:5173,http://localhost:3000
+   CORS_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:3000
    MAX_CSV_ROWS=500
    ```
+   *Note: If your frontend dev server runs on another port (like `5174`), ensure it is added to `CORS_ORIGINS`.*
 
 5. Run the FastAPI server:
    ```bash
@@ -97,9 +98,13 @@ SentimentScope is a modern, full-stack AI application designed to analyze the se
 
 4. Start the development server:
    ```bash
+   # On standard command prompt/bash:
    npm run dev
+
+   # On Windows PowerShell (if script execution is disabled):
+   npm.cmd run dev
    ```
-   *The frontend will run at `http://localhost:5173`.*
+   *The frontend will run at `http://localhost:5173` (or `http://localhost:5174` if `5173` is already in use).*
 
 ---
 

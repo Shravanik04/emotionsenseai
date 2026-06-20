@@ -1,5 +1,5 @@
-import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, FileText, Upload, History, BarChart2 } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, FileText, Upload, History, BarChart2, LogOut } from 'lucide-react';
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -11,7 +11,14 @@ const navItems = [
 
 export const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   
+  const handleLogout = () => {
+    localStorage.removeItem('isAuthenticated');
+    localStorage.removeItem('userEmail');
+    navigate('/login');
+  };
+
   return (
     <div className="w-64 bg-white h-screen border-r fixed flex flex-col">
       <div className="p-6 border-b">
@@ -35,6 +42,15 @@ export const Sidebar = () => {
           );
         })}
       </nav>
+      <div className="p-4 border-t">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 p-3 w-full rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors text-left font-medium cursor-pointer"
+        >
+          <LogOut size={20} />
+          <span>Log Out</span>
+        </button>
+      </div>
     </div>
   );
 };
