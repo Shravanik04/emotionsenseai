@@ -56,6 +56,11 @@ export const getStats = async (): Promise<StatsResponse> => {
 // Export CSV
 export const getExportUrl = () => `${API_BASE_URL}/export`;
 
+export const exportData = async (): Promise<Blob> => {
+  const { data } = await api.get('/export', { responseType: 'blob' });
+  return data;
+};
+
 // WebSocket URL builder
 export const getWebSocketUrl = (): string => {
   const base = API_BASE_URL.replace(/^http/, 'ws');

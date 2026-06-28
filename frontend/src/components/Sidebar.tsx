@@ -5,7 +5,7 @@ import { useTheme } from '../contexts/ThemeContext';
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
   { name: 'Analyze Text', path: '/analyze', icon: FileText },
-  { name: 'Upload CSV', path: '/upload', icon: Upload },
+  { name: 'Batch Analysis', path: '/upload', icon: Upload },
   { name: 'History', path: '/history', icon: History },
   { name: 'Stats', path: '/stats', icon: BarChart2 },
 ];

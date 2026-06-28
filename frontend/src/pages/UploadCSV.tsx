@@ -4,7 +4,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
 } from 'recharts';
 import { Upload, FileText, Download, AlertCircle } from 'lucide-react';
-import { analyzeBatch, getExportUrl } from '../services/api';
+import { analyzeBatch, getExportUrl, exportData } from '../services/api';
 import type { BatchSummary } from '../types';
 
 const SENTIMENT_COLORS: Record<string, string> = {
@@ -27,6 +27,30 @@ export const UploadCSV = () => {
   const [error, setError] = useState('');
   const [fileName, setFileName] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
+  const [exporting, setExporting] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
+
+  const handleDownload = async () => {
+    setExporting(true);
+    setDownloaded(false);
+    try {
+      const blob = await exportData();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'sentiment_export.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      setDownloaded(true);
+      setTimeout(() => setDownloaded(false), 3000);
+    } catch (err: any) {
+      setError('Failed to download report: ' + (err.message || 'unknown error'));
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleUpload = async (file: File) => {
     setLoading(true);
@@ -45,7 +69,16 @@ export const UploadCSV = () => {
       setSummary(res);
       setProgress(100);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to process file');
+      const msg = err.response?.data?.detail;
+      if (typeof msg === 'string') {
+        setError(msg);
+      } else if (Array.isArray(msg)) {
+        setError(msg.map((e: any) => e.msg || JSON.stringify(e)).join(', '));
+      } else if (msg) {
+        setError(JSON.stringify(msg));
+      } else {
+        setError(err.message || 'Failed to process file');
+      }
     } finally {
       clearInterval(interval);
       setLoading(false);
@@ -158,58 +191,128 @@ export const UploadCSV = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Sentiment Pie */}
               <div className="glass-card p-6">
-                <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-secondary)' }}>Sentiment</h3>
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie
-                      data={[
-                        { name: 'Positive', value: summary.positive_count },
-                        { name: 'Negative', value: summary.negative_count },
-                        { name: 'Neutral', value: summary.neutral_count },
-                      ]}
-                      cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={4} dataKey="value"
-                    >
-                      <Cell fill={SENTIMENT_COLORS.positive} />
-                      <Cell fill={SENTIMENT_COLORS.negative} />
-                      <Cell fill={SENTIMENT_COLORS.neutral} />
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
+                <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-secondary)' }}>Sentiment Distribution</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                  <div className="h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'Positive', value: summary.positive_count },
+                            { name: 'Negative', value: summary.negative_count },
+                            { name: 'Neutral', value: summary.neutral_count },
+                          ]}
+                          cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={4} dataKey="value"
+                        >
+                          <Cell fill={SENTIMENT_COLORS.positive} />
+                          <Cell fill={SENTIMENT_COLORS.negative} />
+                          <Cell fill={SENTIMENT_COLORS.neutral} />
+                        </Pie>
+                        <Tooltip
+                          contentStyle={{
+                            background: 'var(--bg-glass)',
+                            borderColor: 'var(--border-glass)',
+                            borderRadius: '8px',
+                            color: 'var(--text-primary)',
+                          }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
+                    {[
+                      { name: 'Positive', count: summary.positive_count, color: SENTIMENT_COLORS.positive },
+                      { name: 'Negative', count: summary.negative_count, color: SENTIMENT_COLORS.negative },
+                      { name: 'Neutral', count: summary.neutral_count, color: SENTIMENT_COLORS.neutral },
+                    ]
+                      .sort((a, b) => b.count - a.count)
+                      .map(item => {
+                        const total = summary.processed_rows || 1;
+                        const percentage = ((item.count / total) * 100).toFixed(1);
+                        return (
+                          <div key={item.name} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-all">
+                            <div className="flex items-center gap-2">
+                              <span className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                              <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                                {item.name}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm">
+                              <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{item.count}</span>
+                              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>({percentage}%)</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
               </div>
 
               {/* Emotion Pie */}
               {Object.keys(summary.emotion_counts).length > 0 && (
                 <div className="glass-card p-6">
-                  <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-secondary)' }}>Emotions</h3>
-                  <ResponsiveContainer width="100%" height={220}>
-                    <PieChart>
-                      <Pie
-                        data={Object.entries(summary.emotion_counts).map(([k, v]) => ({ name: k, value: v }))}
-                        cx="50%" cy="50%" innerRadius={45} outerRadius={75} paddingAngle={3} dataKey="value"
-                      >
-                        {Object.keys(summary.emotion_counts).map((k, i) => (
-                          <Cell key={i} fill={EMOTION_COLORS[k] || '#6366f1'} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
+                  <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--text-secondary)' }}>Emotions Breakdown</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                    <div className="h-[200px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={Object.entries(summary.emotion_counts).map(([k, v]) => ({ name: k, value: v }))}
+                            cx="50%" cy="50%" innerRadius={45} outerRadius={70} paddingAngle={3} dataKey="value"
+                          >
+                            {Object.keys(summary.emotion_counts).map((k, i) => (
+                              <Cell key={i} fill={EMOTION_COLORS[k] || '#6366f1'} />
+                            ))}
+                          </Pie>
+                          <Tooltip
+                            contentStyle={{
+                              background: 'var(--bg-glass)',
+                              borderColor: 'var(--border-glass)',
+                              borderRadius: '8px',
+                              color: 'var(--text-primary)',
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1 custom-scrollbar">
+                      {Object.entries(summary.emotion_counts)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([emotion, count]) => {
+                          const total = summary.processed_rows || 1;
+                          const percentage = ((count / total) * 100).toFixed(1);
+                          const color = EMOTION_COLORS[emotion] || '#6366f1';
+                          return (
+                            <div key={emotion} className="flex items-center justify-between p-2 rounded-lg hover:bg-white/5 transition-all">
+                              <div className="flex items-center gap-2">
+                                <span className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                                <span className="text-sm font-medium capitalize" style={{ color: 'var(--text-primary)' }}>
+                                  {emotion}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{count}</span>
+                                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>({percentage}%)</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Export */}
             <div className="flex justify-end">
-              <a
-                href={getExportUrl()}
-                download
-                className="btn-accent flex items-center gap-2 text-sm"
+              <button
+                onClick={handleDownload}
+                disabled={exporting}
+                className="btn-accent flex items-center gap-2 text-sm disabled:opacity-50"
               >
-                <Download size={16} /> Download Full Export
-              </a>
+                <Download size={16} />
+                {exporting ? 'Generating Export...' : downloaded ? 'Downloaded!' : 'Download Full Export'}
+              </button>
             </div>
 
             {/* Errors */}

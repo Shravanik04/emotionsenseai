@@ -175,18 +175,20 @@ async def analyze_batch(file: UploadFile = File(...), db: Session = Depends(get_
     # Determine file type and parse
     try:
         if filename.endswith(".csv"):
-            texts = parse_csv(contents.decode("utf-8"))
+            texts = parse_csv(contents)
         elif filename.endswith(".txt"):
-            texts = parse_txt(contents.decode("utf-8"))
+            texts = parse_txt(contents)
         elif filename.endswith((".xlsx", ".xls")):
-            texts = parse_excel(contents)
+            texts = parse_excel(contents, filename)
         else:
             raise HTTPException(
                 status_code=400,
                 detail="Unsupported file type. Accepted: .csv, .txt, .xlsx, .xls",
             )
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        if isinstance(e, HTTPException):
+            raise e
+        raise HTTPException(status_code=400, detail=f"Failed to parse file: {str(e)}")
 
     if len(texts) > settings.MAX_CSV_ROWS:
         raise HTTPException(
@@ -206,21 +208,43 @@ async def analyze_batch(file: UploadFile = File(...), db: Session = Depends(get_
         "errors": [],
     }
 
+    # Concurrency control: limit to 10 concurrent requests to prevent CPU thrashing
+    sem = asyncio.Semaphore(10)
+
+    async def analyze_single(idx: int, text: str):
+        if not text.strip():
+            return idx, "skipped", None, None
+        async with sem:
+            try:
+                res = await _analyze_in_thread(text)
+                return idx, "success", res, None
+            except Exception as e:
+                return idx, "error", None, str(e)
+
+    # Dispatch tasks and await them concurrently
+    tasks = [analyze_single(i, text) for i, text in enumerate(texts)]
+    results = await asyncio.gather(*tasks)
+
     total_confidence = 0.0
     emotion_counter: Counter = Counter()
 
-    for i, text in enumerate(texts):
-        if not text.strip():
+    # Process results in order
+    for idx, status, result, err_msg in sorted(results, key=lambda x: x[0]):
+        if status == "skipped":
             summary["skipped_rows"] += 1
             continue
+        elif status == "error":
+            summary["skipped_rows"] += 1
+            summary["errors"].append(f"Row {idx + 1}: {err_msg}")
+            continue
+
         try:
-            result = await _analyze_in_thread(text)
             sentiment = result["sentiment"]
             confidence = result["sentiment_confidence"]
             emotion = result["emotion"]
 
             record = SentimentRecord(
-                original_text=text,
+                original_text=texts[idx],
                 sentiment=sentiment,
                 confidence=confidence,
                 source_type="batch",
@@ -246,10 +270,9 @@ async def analyze_batch(file: UploadFile = File(...), db: Session = Depends(get_
                 summary["negative_count"] += 1
             else:
                 summary["neutral_count"] += 1
-
         except Exception as e:
             summary["skipped_rows"] += 1
-            summary["errors"].append(f"Row {i + 1}: {str(e)}")
+            summary["errors"].append(f"Row {idx + 1} save error: {str(e)}")
 
     db.commit()
 
