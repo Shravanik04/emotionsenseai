@@ -12,7 +12,7 @@ def test_analyze_text():
     assert response.status_code == 200
     data = response.json()
     assert data["sentiment"] == "positive"
-    assert data["confidence"] > 0.5
+    assert data["sentiment_confidence"] > 0.5
 
 def test_analyze_batch():
     # Create a fake csv file

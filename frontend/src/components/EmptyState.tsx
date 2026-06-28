@@ -1,5 +1,5 @@
 export const EmptyState = ({ message }: { message: string }) => (
-  <div className="bg-gray-50 border border-dashed border-gray-300 p-8 rounded-lg text-center text-gray-500">
-    {message}
+  <div className="glass-card p-12 text-center" style={{ color: 'var(--text-muted)' }}>
+    <p className="text-lg font-medium">{message}</p>
   </div>
 );

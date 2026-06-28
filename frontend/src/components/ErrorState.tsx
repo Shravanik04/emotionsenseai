@@ -1,6 +1,6 @@
 export const ErrorState = ({ message }: { message: string }) => (
-  <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg">
-    <h3 className="font-bold">Error</h3>
-    <p>{message}</p>
+  <div className="glass-card p-8 text-center" style={{ borderColor: 'var(--negative)' }}>
+    <p className="font-semibold" style={{ color: 'var(--negative)' }}>Error</p>
+    <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>{message}</p>
   </div>
 );

@@ -1,5 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FileText, Upload, History, BarChart2, LogOut } from 'lucide-react';
+import { LayoutDashboard, FileText, Upload, History, BarChart2, LogOut, Sun, Moon } from 'lucide-react';
+import { useTheme } from '../contexts/ThemeContext';
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
@@ -12,7 +13,8 @@ const navItems = [
 export const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  
+  const { isDark, toggle } = useTheme();
+
   const handleLogout = () => {
     localStorage.removeItem('isAuthenticated');
     localStorage.removeItem('userEmail');
@@ -20,12 +22,32 @@ export const Sidebar = () => {
   };
 
   return (
-    <div className="w-64 bg-white h-screen border-r fixed flex flex-col">
-      <div className="p-6 border-b">
-        <h1 className="text-xl font-bold text-blue-600">SentimentScope</h1>
-        <p className="text-xs text-gray-500">AI Sentiment Analyzer</p>
+    <div
+      className="glass-sidebar fixed flex flex-col h-screen z-50"
+      style={{ width: 'var(--sidebar-width)' }}
+    >
+      {/* Logo */}
+      <div className="p-6" style={{ borderBottom: '1px solid var(--border-glass)' }}>
+        <div className="flex items-center gap-3">
+          <div
+            className="w-10 h-10 rounded-xl flex items-center justify-center text-white font-bold text-lg"
+            style={{ background: 'var(--accent-gradient)' }}
+          >
+            S
+          </div>
+          <div>
+            <h1 className="text-lg font-bold" style={{ color: 'var(--accent-primary)' }}>
+              SentimentScope
+            </h1>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+              AI Sentiment & Emotion
+            </p>
+          </div>
+        </div>
       </div>
-      <nav className="flex-1 p-4 space-y-2">
+
+      {/* Navigation */}
+      <nav className="flex-1 p-3 space-y-0.5">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location.pathname === item.path;
@@ -33,22 +55,41 @@ export const Sidebar = () => {
             <Link
               key={item.path}
               to={item.path}
-              className={`flex items-center gap-3 p-3 rounded-lg transition-colors
-              ${isActive ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+              className="flex items-center gap-2.5 py-2.5 px-3 rounded-xl transition-all duration-200"
+              style={{
+                background: isActive ? 'var(--accent-gradient)' : 'transparent',
+                color: isActive ? '#fff' : 'var(--text-secondary)',
+                fontWeight: isActive ? 600 : 400,
+                boxShadow: isActive ? '0 4px 12px rgba(99, 102, 241, 0.25)' : 'none',
+              }}
             >
-              <Icon size={20} />
-              {item.name}
+              <Icon size={18} />
+              <span className="text-sm">{item.name}</span>
             </Link>
           );
         })}
       </nav>
-      <div className="p-4 border-t">
+
+      {/* Bottom controls */}
+      <div className="p-4 space-y-2" style={{ borderTop: '1px solid var(--border-glass)' }}>
+        {/* Dark / Light toggle */}
+        <button
+          onClick={toggle}
+          className="flex items-center gap-3 p-3 w-full rounded-xl transition-all duration-200 cursor-pointer"
+          style={{ color: 'var(--text-secondary)' }}
+        >
+          {isDark ? <Sun size={20} /> : <Moon size={20} />}
+          <span className="font-medium">{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+        </button>
+
+        {/* Logout */}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 p-3 w-full rounded-lg text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors text-left font-medium cursor-pointer"
+          className="flex items-center gap-3 p-3 w-full rounded-xl transition-all duration-200 cursor-pointer"
+          style={{ color: '#ef4444' }}
         >
           <LogOut size={20} />
-          <span>Log Out</span>
+          <span className="font-medium">Log Out</span>
         </button>
       </div>
     </div>

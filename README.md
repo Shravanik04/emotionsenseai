@@ -1,151 +1,119 @@
-# SentimentScope - AI-Powered Sentiment Analyzer
+# Multilingual Emotion & Sentiment Analyzer Platform
 
-SentimentScope is a modern, full-stack AI application designed to analyze the sentiment of textual data. It leverages a fine-tuned **DistilBERT** transformer model to classify text into positive or negative sentiment with high confidence scores, providing visual analytics via a responsive React dashboard.
-
-## 🚀 Features
-
-- **Single Text Analysis**: Get real-time sentiment classifications (Positive/Negative) and confidence scores for any input text.
-- **Bulk CSV Upload**: Upload files containing multiple text items (up to 500 rows) and process them in batch.
-- **Dynamic Analytics Dashboard**: Visualize historical data, sentiment trends, and statistics using modern interactive charts (**Recharts**).
-- **History Tracker**: Persistently store and manage past analyses in a local SQLite database.
-- **Clean Responsive UI**: Designed with React, TypeScript, and styled with Tailwind CSS, supporting dark/light mode aesthetics.
+An enterprise-grade, real-time AI platform that performs multilingual sentiment classification, multi-emotion detection, sarcasm classification, readability indexing, and entity recognition. The system is designed to process and analyze text as you type, providing insights in under 300ms.
 
 ---
 
-## 🛠️ Tech Stack
+## 🌟 Key Features
 
-### Backend
-- **Framework**: FastAPI (Python)
-- **AI/ML Model**: `distilbert-base-uncased-finetuned-sst-2-english` (Hugging Face Transformers / PyTorch)
-- **Database**: SQLite (SQLAlchemy ORM)
-- **Caching & Processing**: Pandas
-
-### Frontend
-- **Framework**: React 18 with Vite
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS & PostCSS
-- **Icons**: Lucide React
-- **Charts**: Recharts
-
----
-
-## ⚙️ Project Setup & Installation
-
-### Prerequisites
-- Python 3.8+
-- Node.js 18+
-- npm or yarn
+* **Real-time Engine**: Continuous debounced analysis (400ms) over a persistent WebSocket connection. No analyze button needed.
+* **Dual Sentiment & Emotion Models**: Evaluates text using:
+  * Multilingual Sentiment: `cardiffnlp/twitter-xlm-roberta-base-sentiment`
+  * English Emotion: `j-hartmann/emotion-english-distilroberta-base`
+* **Dedicated Sarcasm Pipeline**: Utilizes `dima806/sarcasm-detection-distilbert` along with rule-based syntactic clash heuristics to identify sarcasm and contextually invert false positive sentiments to negative frustration/disappointment.
+* **Enriched 45+ Sub-Emotion Categories**: Refines standard transformer predictions into detailed emotion classes using mapped keyword lexicons. Recently expanded to include `belonging`, `collaboration`, `fatigue`, and `discomfort`.
+* **Contextual Emotion Enrichment**: Automatically detects semantic patterns (such as combining positive collaboration context like "love" + "team", or physical aversion like "hate" + "waking up early") to dynamically trigger and boost secondary emotions above the visibility threshold.
+* **Premium Tabbed Results Layout**: Replaced the long vertical-scrolling results panel with a custom, glassmorphic Tab Bar component:
+  * **Overview**: Sarcasm alert banner, Sentiment distribution bars, Primary Emotion radial gauge, and AI Insights.
+  * **Emotions**: Secondary detected emotions (exceeding 20% score) with single-sentence contextual explanations, and a ranked emotion distribution chart.
+  * **Sentences**: Flow timeline of sentence-by-sentence emotions and an interactive breakdown table highlighting sentiment, emotion, and sarcasm.
+  * **Metadata & Entities**: Language detection, Named Entity Recognition (NER), and a dynamic Word Cloud.
+* **Visual Copy Feedback**: Real-time copy confirmation on the "Copy Report" button, which turns positive green and shows "Copied!" for 2 seconds.
+* **Theme-Adaptive High Visibility**: Fully optimized colors for both dark and light modes. Custom-designed CSS variables and adaptive Tailwind classes ensure that all headers, text paragraphs, tags, and charts remain dark and highly legible in light mode while transitioning to high-contrast glowing elements in dark mode.
+* **Multilingual Input & Translation**: Offline Unicode script range detection for Indian languages (Hindi, Kannada, Telugu, Tamil, Malayalam, Bengali, Gujarati, Punjabi) with Google Translate API fallbacks.
+* **Voice Capabilities**: Browser-native Speech-to-Text (Microphone recording) and Text-to-Speech (reading insights aloud).
+* **Automatic DB Sync**: Automatically commits every real-time analysis to the SQLite database without manual saving.
+* **Export Utilities**: Quick file exports to **CSV**, **JSON**, and print-ready **PDF** with print-optimized CSS rules.
 
 ---
 
-### 1. Backend Setup
+## 📂 Project Structure
 
-1. Navigate to the `backend` directory:
-   ```bash
-   cd backend
-   ```
-
-2. Create and activate a Python virtual environment:
-   ```bash
-   # Windows (PowerShell)
-   python -m venv venv
-   .\venv\Scripts\Activate.ps1
-
-   # Windows (CMD)
-   .\venv\Scripts\activate.bat
-
-   # macOS/Linux
-   source venv/bin/activate
-   ```
-
-3. Install the dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Create a `.env` file in the `backend/` directory (if not already present):
-   ```env
-   DATABASE_URL=sqlite:///./sentiment.db
-   CORS_ORIGINS=http://localhost:5173,http://localhost:5174,http://localhost:3000
-   MAX_CSV_ROWS=500
-   ```
-   *Note: If your frontend dev server runs on another port (like `5174`), ensure it is added to `CORS_ORIGINS`.*
-
-5. Run the FastAPI server:
-   ```bash
-   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
-   ```
-   *The backend will be running at `http://localhost:8000`. You can inspect the automatic API documentation at `http://localhost:8000/docs`.*
-
----
-
-### 2. Frontend Setup
-
-1. Open a new terminal and navigate to the `frontend` directory:
-   ```bash
-   cd frontend
-   ```
-
-2. Install the package dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create a `.env` file in the `frontend/` directory (if not already present):
-   ```env
-   VITE_API_URL=http://localhost:8000/api
-   ```
-
-4. Start the development server:
-   ```bash
-   # On standard command prompt/bash:
-   npm run dev
-
-   # On Windows PowerShell (if script execution is disabled):
-   npm.cmd run dev
-   ```
-   *The frontend will run at `http://localhost:5173` (or `http://localhost:5174` if `5173` is already in use).*
-
----
-
-## 📁 Directory Structure
-
-```text
-sentimentscope/
+```bash
+ss-basic/
 ├── backend/
 │   ├── app/
-│   │   ├── api/            # API endpoints & routing
-│   │   ├── core/           # Config and settings
-│   │   ├── db/             # Database session & models setup
-│   │   ├── models/         # SQLAlchemy database models
-│   │   ├── schemas/        # Pydantic schemas (request/response validation)
-│   │   ├── services/       # AI sentiment analyzer and database operations
-│   │   └── main.py         # Entry point for FastAPI application
-│   ├── requirements.txt    # Python packages
-│   └── sentiment.db        # SQLite database file (auto-generated)
-├── frontend/
-│   ├── src/
-│   │   ├── components/     # Reusable layout and UI components
-│   │   ├── pages/          # Dashboard, AnalyzeText, UploadCSV, Stats, History
-│   │   ├── App.tsx         # Root component & Router configuration
-│   │   └── main.tsx        # Vite entry point
-│   ├── package.json
-│   └── vite.config.ts
-└── .gitignore              # Ignored folders (venv, node_modules, secrets)
+│   │   ├── api/
+│   │   │   └── routes.py             # REST, WebSocket & export endpoints
+│   │   ├── core/
+│   │   │   └── config.py             # Hugging Face models & settings
+│   │   ├── db/
+│   │   │   ├── base.py
+│   │   │   └── session.py            # SQLite engine & sessions
+│   │   ├── models/
+│   │   │   └── sentiment_model.py    # SQLAlchemy tables schema
+│   │   ├── schemas/
+│   │   │   └── sentiment.py          # Pydantic request/response models
+│   │   ├── services/
+│   │   │   ├── analysis_service.py   # Multi-sentence NLP model engine
+│   │   │   └── sarcasm_service.py    # Hybrid sarcasm detection logic
+│   │   ├── utils/
+│   │   │   ├── emotion_lexicon.py    # Sub-emotions, emojis & context boosters
+│   │   │   ├── keyword_utils.py      # Keyword extractor
+│   │   │   └── insight_utils.py      # AI explanations and text templates
+│   │   └── main.py                   # FastAPI app & SQLite migrator
+│   └── tests/
+│       ├── test_api.py               # REST route checks
+│       └── test_sarcasm.py           # Sarcasm, readability & NER tests
+└── frontend/
+    ├── src/
+    │   ├── pages/
+    │   │   ├── AnalyzeText.tsx       # Live STT/TTS dashboard with timeline
+    │   │   ├── History.tsx           # CSV/JSON/PDF exports and search lists
+    │   │   └── Dashboard.tsx         # Analytical statistics overview
+    │   ├── services/
+    │   │   └── api.ts                # Axios wrappers & WebSocket builders
+    │   ├── types/
+    │   │   └── index.ts              # TypeScript interfaces
+    │   └── index.css                 # Base theme and print media queries
 ```
 
 ---
 
-## 🧪 Running Tests
+## 🚀 Setup & Launch
 
-To run backend tests, use `pytest` within the active backend virtual environment:
-```bash
+### 1. Backend Server Setup
+From the repository root, run:
+```powershell
+# Navigate into backend directory
 cd backend
+
+# Activate virtual environment
+.\venv\Scripts\activate
+
+# Start uvicorn development server
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+The server will start on `http://localhost:8000`. The first run will automatically download the required Hugging Face weights (~500MB) to your local cache directory.
+
+---
+
+### 2. Frontend React Dashboard Setup
+In a new terminal window:
+```powershell
+# Navigate into frontend directory
+cd frontend
+
+# Install node modules
+npm install
+
+# Start Vite dev server
+npm run dev
+```
+Open `http://localhost:5173` in your browser.
+
+---
+
+## 🧪 Testing
+
+To run the backend test suite, activate your virtual environment in `backend/` and run:
+```powershell
 pytest
 ```
+This runs 7 comprehensive unit tests verifying sarcasm classification, sentiment flipping, readability indices, named entities, and batch processing.
 
----
-
-## 🌐 Deployment
-
-For instructions on deploying the full-stack app (FastAPI + React) to production platforms like **Render**, **Vercel**, or **Railway**, see the deployment guide in your codebase notes.
+To run TypeScript verification:
+```powershell
+cd frontend
+npx.cmd tsc --noEmit
+```
