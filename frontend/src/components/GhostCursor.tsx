@@ -54,7 +54,7 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
   const materialRef = useRef<THREE.ShaderMaterial | null>(null);
   const bloomPassRef = useRef<UnrealBloomPass | null>(null);
   const filmPassRef = useRef<ShaderPass | null>(null);
-  
+
   // Trail circular buffer
   const trailBufRef = useRef<THREE.Vector2[]>([]);
   const headRef = useRef(0);
@@ -107,6 +107,7 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
     }
 
     float fbm(vec2 p){
+      p += vec2(1000.0);
       float v = 0.0;
       float a = 0.5;
       mat2 m = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
@@ -126,13 +127,15 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
       vec2 r = vec2(fbm(p * iScale + q * 1.5 + iTime * 0.15), fbm(p * iScale + q * 1.5 + vec2(8.3,2.8) + iTime * 0.15));
       float smoke = fbm(p * iScale + r * 0.8);
       
-      float radius = 0.5 + 0.3 * (1.0 / iScale);
+      float radius = 0.35 + 0.2 * (1.0 / iScale);
       float distFactor = 1.0 - smoothstep(0.0, radius * activity, length(p - mousePos));
       float alpha = pow(smoke, 2.5) * distFactor;
 
       vec3 c1 = tint1(iBaseColor);
       vec3 c2 = tint2(iBaseColor);
-      vec3 color = mix(c1, c2, sin(iTime * 0.5) * 0.5 + 0.5);
+      float aspect = iResolution.x / iResolution.y;
+      float factor = clamp((p.x / aspect + 1.0) * 0.5, 0.0, 1.0);
+      vec3 color = mix(c1, c2, mix(factor, sin(iTime * 0.5) * 0.5 + 0.5, 0.3));
 
       return vec4(color * alpha * intensity, alpha * intensity);
     }
@@ -168,7 +171,7 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
       float k = clamp(iEdgeIntensity, 0.0, 1.0);
       float edgeMask = mix(1.0 - k, 1.0, distFromEdge);
       
-      float outAlpha = clamp(alphaAcc * iOpacity * edgeMask, 0.0, 1.0);
+      float outAlpha = clamp(alphaAcc * iOpacity * edgeMask * iBrightness, 0.0, 1.0);
       gl_FragColor = vec4(colorAcc, outAlpha);
     }
   `;
@@ -316,9 +319,8 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
     composer.addPass(UnpremultiplyPass);
 
     const resize = () => {
-      const rect = host.getBoundingClientRect();
-      const cssW = Math.max(1, Math.floor(rect.width));
-      const cssH = Math.max(1, Math.floor(rect.height));
+      const cssW = window.innerWidth;
+      const cssH = window.innerHeight;
 
       const currentDPR = Math.min(
         typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1,
@@ -327,7 +329,7 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
 
       const need = cssW * cssH * currentDPR * currentDPR;
       const scale = need <= pixelBudget ? 1 : Math.max(0.5, Math.min(1, Math.sqrt(pixelBudget / Math.max(1, need))));
-      
+
       const pixelRatio = currentDPR * scale;
       renderer.setPixelRatio(pixelRatio);
       renderer.setSize(cssW, cssH, false);
@@ -336,9 +338,9 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
 
       const wpx = Math.max(1, Math.floor(cssW * pixelRatio));
       const hpx = Math.max(1, Math.floor(cssH * pixelRatio));
-      
+
       material.uniforms.iResolution.value.set(wpx, hpx, 1);
-      material.uniforms.iScale.value = calculateScale(host);
+      material.uniforms.iScale.value = Math.max(0.5, Math.min(2.0, Math.min(cssW, cssH) / 600));
       bloomPass.setSize(wpx, hpx);
     };
 
@@ -352,7 +354,7 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
     const animate = () => {
       const now = performance.now();
       const t = (now - start) / 1000;
-      
+
       const mat = materialRef.current!;
       const comp = composerRef.current!;
 
@@ -368,7 +370,7 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
         if (velocityRef.current.lengthSq() > 1e-6) {
           mat.uniforms.iMouse.value.add(velocityRef.current);
         }
-        
+
         const dt = now - lastMoveTimeRef.current;
         if (dt > fadeDelay) {
           const k = Math.min(1, (dt - fadeDelay) / fadeDuration);
@@ -379,12 +381,13 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
       const N = trailBufRef.current.length;
       headRef.current = (headRef.current + 1) % N;
       trailBufRef.current[headRef.current].copy(mat.uniforms.iMouse.value);
-      
+
       const arr = mat.uniforms.iPrevMouse.value as THREE.Vector2[];
       for (let i = 0; i < N; i++) {
         const srcIdx = (headRef.current - i + N) % N;
         arr[i].copy(trailBufRef.current[srcIdx]);
       }
+      mat.uniforms.iPrevMouse.value = [...arr];
 
       mat.uniforms.iOpacity.value = fadeOpacityRef.current;
       mat.uniforms.iTime.value = t;
@@ -412,10 +415,9 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
     };
 
     const onPointerMove = (e: PointerEvent) => {
-      const rect = parent.getBoundingClientRect();
-      const x = THREE.MathUtils.clamp((e.clientX - rect.left) / Math.max(1, rect.width), 0, 1);
-      const y = THREE.MathUtils.clamp(1 - (e.clientY - rect.top) / Math.max(1, rect.height), 0, 1);
-      
+      const x = THREE.MathUtils.clamp(e.clientX / window.innerWidth, 0, 1);
+      const y = THREE.MathUtils.clamp(1 - e.clientY / window.innerHeight, 0, 1);
+
       currentMouseRef.current.set(x, y);
       pointerActiveRef.current = true;
       lastMoveTimeRef.current = performance.now();
@@ -433,29 +435,29 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
       ensureLoop();
     };
 
-    parent.addEventListener('pointermove', onPointerMove, { passive: true });
-    parent.addEventListener('pointerenter', onPointerEnter, { passive: true });
-    parent.addEventListener('pointerleave', onPointerLeave, { passive: true });
-    
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('pointerenter', onPointerEnter, { passive: true });
+    window.addEventListener('pointerleave', onPointerLeave, { passive: true });
+
     ensureLoop();
 
     return () => {
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       runningRef.current = false;
       rafRef.current = null;
-      
-      parent.removeEventListener('pointermove', onPointerMove);
-      parent.removeEventListener('pointerenter', onPointerEnter);
-      parent.removeEventListener('pointerleave', onPointerLeave);
-      
+
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerenter', onPointerEnter);
+      window.removeEventListener('pointerleave', onPointerLeave);
+
       resizeObsRef.current?.disconnect();
-      
+
       scene.clear();
       geom.dispose();
       material.dispose();
       composer.dispose();
       renderer.dispose();
-      
+
       if (renderer.domElement && renderer.domElement.parentElement) {
         renderer.domElement.parentElement.removeChild(renderer.domElement);
       }
@@ -505,7 +507,7 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
   useEffect(() => {
     const el = rendererRef.current?.domElement;
     if (!el) return;
-    
+
     if (mixBlendMode) {
       el.style.mixBlendMode = String(mixBlendMode);
     } else {
@@ -516,7 +518,7 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
   const mergedStyle = useMemo<React.CSSProperties>(() => ({ zIndex, ...style }), [zIndex, style]);
 
   return (
-    <div ref={containerRef} className={`pointer-events-none absolute inset-0 ${className ?? ''}`} style={mergedStyle} />
+    <div ref={containerRef} className={`pointer-events-none absolute top-0 left-0 w-full h-full ${className ?? ''}`} style={mergedStyle} />
   );
 };
 
