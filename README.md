@@ -17,11 +17,16 @@ An enterprise-grade, real-time AI platform that performs multilingual sentiment 
   * **Overview**: Sarcasm alert banner, Sentiment distribution bars, Primary Emotion radial gauge, and AI Insights.
   * **Emotions**: Secondary detected emotions (exceeding 20% score) with single-sentence contextual explanations, and a ranked emotion distribution chart.
   * **Sentences**: Flow timeline of sentence-by-sentence emotions and an interactive breakdown table highlighting sentiment, emotion, and sarcasm.
-  * **Metadata & Entities**: Language detection, Named Entity Recognition (NER), and a dynamic Word Cloud.
+  * **Metadata & Entities**: Language detection, Named Entity Recognition (NER) in a stacked layout to prevent squishing, and a dynamic Word Cloud.
+* **Smart Tab Bar Alignment**: Configured the tab bar to automatically fit in a single line on desktop using horizontal scrolling (`overflow-x-auto whitespace-nowrap scrollbar-none`) with hidden scrollbars, preventing wrap-down clipping. Shortened tab labels (e.g., `"Metadata"`) for maximum alignment.
 * **Visual Copy Feedback**: Real-time copy confirmation on the "Copy Report" button, which turns positive green and shows "Copied!" for 2 seconds.
 * **Theme-Adaptive High Visibility**: Fully optimized colors for both dark and light modes. Custom-designed CSS variables and adaptive Tailwind classes ensure that all headers, text paragraphs, tags, and charts remain dark and highly legible in light mode while transitioning to high-contrast glowing elements in dark mode.
 * **Multilingual Input & Translation**: Offline Unicode script range detection for Indian languages (Hindi, Kannada, Telugu, Tamil, Malayalam, Bengali, Gujarati, Punjabi) with Google Translate API fallbacks.
-* **Voice Capabilities**: Browser-native Speech-to-Text (Microphone recording) and Text-to-Speech (reading insights aloud).
+* **Voice Capabilities & Robust Error Handling**:
+  - Browser-native Speech-to-Text (Microphone recording) and Text-to-Speech (reading insights aloud).
+  - Handles browser microphone permission states (`not-allowed`, `audio-capture`, `no-speech`) and displays premium glassmorphic Toast alerts (fading out after 5s) instead of silent failures.
+  - Employs a React `textRef` sync mechanism to prevent stale closures and ensure voice input appends to the latest typed text.
+* **API-Key-Free Offline Architecture**: The application runs entirely locally. It does not require any paid API keys (like OpenAI, Gemini, or Hugging Face tokens). The FastAPI backend loads open-source Hugging Face model pipelines locally on PyTorch, and speech services leverage free browser-native APIs.
 * **Automatic DB Sync**: Automatically commits every real-time analysis to the SQLite database without manual saving.
 * **Export Utilities**: Quick file exports to **CSV**, **JSON**, and print-ready **PDF** with print-optimized CSS rules.
 * **High-Speed Batch Analysis**: Upload and bulk-analyze plain text (`.txt`), CSV (`.csv`), and Excel (`.xlsx`, `.xls`) files.

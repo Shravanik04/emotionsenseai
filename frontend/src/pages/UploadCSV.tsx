@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
+  PieChart, Pie, Cell, ResponsiveContainer, Tooltip,
 } from 'recharts';
 import { Upload, FileText, Download, AlertCircle } from 'lucide-react';
-import { analyzeBatch, getExportUrl, exportData } from '../services/api';
+import { analyzeBatch, exportData } from '../services/api';
 import type { BatchSummary } from '../types';
 
 const SENTIMENT_COLORS: Record<string, string> = {

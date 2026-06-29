@@ -304,3 +304,13 @@ body {
     color: black !important;
   }
 }
+
+/* --- Scrollbar Utilities --- */
+.scrollbar-none::-webkit-scrollbar {
+  display: none !important;
+}
+.scrollbar-none {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+

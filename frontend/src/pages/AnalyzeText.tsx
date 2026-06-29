@@ -148,10 +148,25 @@ export const AnalyzeText = () => {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [copied, setCopied] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'emotions' | 'sentences' | 'metadata'>('overview');
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null);
 
   const wsRef = useRef<WebSocket | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const recognitionRef = useRef<any>(null);
+  const textRef = useRef(text);
+
+  // Sync textRef with latest text state
+  useEffect(() => {
+    textRef.current = text;
+  }, [text]);
+
+  // Auto-dismiss toast after 5 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   /* ---------- WebSocket connection ---------- */
   const connectWs = useCallback(() => {
@@ -196,7 +211,10 @@ export const AnalyzeText = () => {
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+      setToast({
+        message: "Speech recognition is not supported in this browser. Please use Chrome or Edge.",
+        type: 'error'
+      });
       return;
     }
 
@@ -207,16 +225,41 @@ export const AnalyzeText = () => {
 
     rec.onstart = () => setIsListening(true);
     rec.onend = () => setIsListening(false);
-    rec.onerror = () => setIsListening(false);
+    rec.onerror = (event: any) => {
+      console.error("Speech recognition error:", event.error);
+      setIsListening(false);
+      
+      let errorMsg = `Speech recognition error: ${event.error || 'Unknown error'}`;
+      if (event.error === 'not-allowed') {
+        errorMsg = "Microphone access was denied. Please allow microphone permission in your browser address bar.";
+      } else if (event.error === 'audio-capture') {
+        errorMsg = "No microphone detected. Please connect a microphone and try again.";
+      } else if (event.error === 'no-speech') {
+        errorMsg = "No speech was detected. Please speak clearly into your microphone.";
+      } else if (event.error === 'network') {
+        errorMsg = "Network error occurred during speech recognition.";
+      } else if (event.error === 'aborted') {
+        errorMsg = "Speech recognition was aborted.";
+      }
+      
+      setToast({ message: errorMsg, type: event.error === 'no-speech' || event.error === 'aborted' ? 'info' : 'error' });
+    };
     rec.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
-      const updatedText = text ? `${text} ${transcript}` : transcript;
+      const currentText = textRef.current;
+      const updatedText = currentText ? `${currentText} ${transcript}` : transcript;
       setText(updatedText);
       handleTextChange(updatedText);
     };
 
     recognitionRef.current = rec;
-    rec.start();
+    try {
+      rec.start();
+    } catch (err: any) {
+      console.error("Failed to start speech recognition:", err);
+      setToast({ message: "Failed to start speech recognition.", type: 'error' });
+      setIsListening(false);
+    }
   };
 
   /* ---------- Text-to-Speech ---------- */
@@ -438,12 +481,12 @@ ${result.sentences.map((s, idx) => `${idx + 1}. [${s.sentiment.toUpperCase()}] [
                 className="space-y-4"
               >
                 {/* Custom Tab Bar */}
-                <div className="flex flex-wrap items-center gap-1.5 bg-white/5 border border-white/10 p-1.5 rounded-xl">
+                <div className="flex items-center gap-1.5 bg-white/5 border border-white/10 p-1.5 rounded-xl overflow-x-auto scrollbar-none whitespace-nowrap">
                   {[
                     { id: 'overview', name: 'Overview', icon: Brain },
                     { id: 'emotions', name: 'Emotions', icon: Zap },
                     { id: 'sentences', name: 'Sentences', icon: Layers },
-                    { id: 'metadata', name: 'Metadata & Entities', icon: Globe },
+                    { id: 'metadata', name: 'Metadata', icon: Globe },
                   ].map((tab) => {
                     const Icon = tab.icon;
                     const isActive = activeTab === tab.id;
@@ -451,7 +494,7 @@ ${result.sentences.map((s, idx) => `${idx + 1}. [${s.sentiment.toUpperCase()}] [
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as any)}
-                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer shrink-0 ${
                           isActive
                             ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
                             : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-white/5'
@@ -721,7 +764,7 @@ ${result.sentences.map((s, idx) => `${idx + 1}. [${s.sentiment.toUpperCase()}] [
                     initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
                     className="space-y-4"
                   >
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4">
                       {/* Language Detection */}
                       <div className="glass-card p-4">
                         <div className="flex items-center gap-2">
@@ -796,6 +839,36 @@ ${result.sentences.map((s, idx) => `${idx + 1}. [${s.sentiment.toUpperCase()}] [
           ) : null}
         </div>
       </div>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="fixed bottom-6 right-6 z-50 pointer-events-auto"
+          >
+            <div className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg backdrop-blur-md border ${
+              toast.type === 'error'
+                ? 'bg-red-500/10 border-red-500/30 text-red-200'
+                : toast.type === 'success'
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+                : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-200'
+            }`}>
+              <AlertTriangle size={18} className={toast.type === 'error' ? 'text-red-400' : toast.type === 'success' ? 'text-emerald-400' : 'text-indigo-400'} />
+              <span className="text-sm font-medium">{toast.message}</span>
+              <button
+                onClick={() => setToast(null)}
+                className="ml-2 text-xs opacity-70 hover:opacity-100 p-0.5 rounded-full hover:bg-white/10 transition-colors"
+              >
+                &times;
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
