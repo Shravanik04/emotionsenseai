@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getHistory } from '../services/api';
+import { getHistory, deleteHistoryRecord, downloadReport, restoreHistoryRecord } from '../services/api';
 import type { HistoryItem } from '../types';
-import { Search, Filter, FileJson, FileSpreadsheet, Printer, AlertTriangle } from 'lucide-react';
+import { Search, Filter, FileJson, FileSpreadsheet, Printer, AlertTriangle, Eye, Trash2, Download, X, RotateCcw } from 'lucide-react';
+
+
 
 const SENTIMENT_COLORS: Record<string, string> = {
   positive: '#10b981',
@@ -30,18 +32,92 @@ export const History = () => {
   const [language, setLanguage] = useState('all');
   const [sarcasm, setSarcasm] = useState('all');
   const [search, setSearch] = useState('');
+  const [showDeleted, setShowDeleted] = useState(false);
+  const [restoringId, setRestoringId] = useState<number | null>(null);
+
+  // New action states
+  const [toast, setToast] = useState<{ message: string; type: 'error' | 'success' | 'info' } | null>(null);
+  const [selectedItem, setSelectedItem] = useState<HistoryItem | null>(null);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const fetchHistory = useCallback(() => {
     setLoading(true);
-    getHistory(sentiment, search, emotion, language, sarcasm)
+    getHistory(sentiment, search, emotion, language, sarcasm, showDeleted)
       .then(setItems)
       .finally(() => setLoading(false));
-  }, [sentiment, search, emotion, language, sarcasm]);
+  }, [sentiment, search, emotion, language, sarcasm, showDeleted]);
+
 
   useEffect(() => {
     const timer = setTimeout(fetchHistory, 300);
     return () => clearTimeout(timer);
   }, [fetchHistory]);
+
+  // Auto-dismiss toast
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  // Download Handler
+  const handleDownload = async (id: number) => {
+    setDownloadingId(id);
+    try {
+      const blob = await downloadReport(id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `emotionsense_report_${id}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      setToast({ message: "Report downloaded successfully.", type: 'success' });
+    } catch (error) {
+      console.error(error);
+      setToast({ message: "Failed to download report.", type: 'error' });
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  // Delete Handler (supports soft vs permanent)
+  const handleDelete = async (id: number) => {
+    const confirmMessage = showDeleted 
+      ? "Are you sure you want to permanently delete this record? This action cannot be undone."
+      : "Are you sure you want to move this record to the Trash?";
+    if (!window.confirm(confirmMessage)) return;
+    setDeletingId(id);
+    try {
+      await deleteHistoryRecord(id, showDeleted);
+      setItems(prev => prev.filter(item => item.id !== id));
+      setToast({ message: showDeleted ? "Record permanently deleted." : "Record moved to Trash.", type: 'success' });
+    } catch (error) {
+      console.error(error);
+      setToast({ message: "Failed to delete record.", type: 'error' });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  // Restore Handler
+  const handleRestore = async (id: number) => {
+    setRestoringId(id);
+    try {
+      await restoreHistoryRecord(id);
+      setItems(prev => prev.filter(item => item.id !== id));
+      setToast({ message: "Record restored successfully.", type: 'success' });
+    } catch (error) {
+      console.error(error);
+      setToast({ message: "Failed to restore record.", type: 'error' });
+    } finally {
+      setRestoringId(null);
+    }
+  };
+
 
   /* ---------- CSV Export ---------- */
   const exportCSV = () => {
@@ -121,8 +197,20 @@ export const History = () => {
           >
             <Printer size={14} /> Print PDF
           </button>
+          <button
+            onClick={() => setShowDeleted(!showDeleted)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+              showDeleted 
+                ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30' 
+                : 'bg-white/10 text-slate-300 border-white/10 hover:bg-white/20'
+            }`}
+            title="Toggle Trash Manager"
+          >
+            <Trash2 size={14} /> {showDeleted ? "Exit Trash" : "View Trash"}
+          </button>
         </div>
       </div>
+
 
       {/* Filters (Hidden during print) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 flex-wrap non-printable">
@@ -223,7 +311,7 @@ export const History = () => {
           <table className="w-full text-left">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border-glass)' }}>
-                {['Text Preview', 'Sentiment', 'Confidence', 'Dominant Emotion', 'Language', 'Sarcasm', 'Source', 'Date'].map(h => (
+                {['Text Preview', 'Sentiment', 'Confidence', 'Dominant Emotion', 'Language', 'Sarcasm', 'Source', 'Date', 'Actions'].map(h => (
                   <th key={h} className="p-4 text-xs font-semibold" style={{ color: 'var(--text-muted)' }}>{h}</th>
                 ))}
               </tr>
@@ -282,6 +370,54 @@ export const History = () => {
                     <td className="p-4 text-xs font-medium" style={{ color: 'var(--text-muted)' }}>
                       {new Date(item.created_at).toLocaleString()}
                     </td>
+                    <td className="p-4 flex items-center gap-1">
+                      <button
+                        onClick={() => setSelectedItem(item)}
+                        className="p-1.5 rounded bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 transition-colors"
+                        title="View Details"
+                      >
+                        <Eye size={13} />
+                      </button>
+                      {showDeleted && (
+                        <button
+                          onClick={() => handleRestore(item.id)}
+                          disabled={restoringId === item.id}
+                          className="p-1.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 disabled:opacity-50 transition-colors inline-flex items-center justify-center min-w-[26px]"
+                          title="Restore Record"
+                        >
+                          {restoringId === item.id ? (
+                            <div className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <RotateCcw size={13} />
+                          )}
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDownload(item.id)}
+                        disabled={downloadingId === item.id}
+                        className="p-1.5 rounded bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 disabled:opacity-50 transition-colors inline-flex items-center justify-center min-w-[26px]"
+                        title="Download PDF Report"
+                      >
+                        {downloadingId === item.id ? (
+                          <div className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Download size={13} />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(item.id)}
+                        disabled={deletingId === item.id}
+                        className="p-1.5 rounded bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 disabled:opacity-50 transition-colors inline-flex items-center justify-center min-w-[26px]"
+                        title={showDeleted ? "Delete Permanently" : "Move to Trash"}
+                      >
+                        {deletingId === item.id ? (
+                          <div className="w-3 h-3 border-2 border-rose-400 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Trash2 size={13} />
+                        )}
+                      </button>
+                    </td>
+
                   </motion.tr>
                 ))}
               </AnimatePresence>
@@ -289,6 +425,137 @@ export const History = () => {
           </table>
         </div>
       )}
+
+      {/* Detail Modal */}
+      <AnimatePresence>
+        {selectedItem && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 pointer-events-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="glass-card max-w-2xl w-full border border-white/10 shadow-2xl overflow-hidden"
+            >
+              <div className="flex items-center justify-between p-5 border-b border-white/10">
+                <h3 className="text-lg font-bold text-white">Analysis Log Detail</h3>
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="text-gray-400 hover:text-white transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-5 max-h-[65vh] overflow-y-auto">
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Analyzed Text</h4>
+                  <div className="bg-white/5 p-4 rounded-xl text-sm leading-relaxed text-gray-200 border border-white/5 whitespace-pre-wrap">
+                    {selectedItem.text_preview}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Sentiment</h4>
+                    <span
+                      className="emotion-badge text-xs capitalize font-bold px-2.5 py-1 inline-block"
+                      style={{
+                        background: `${SENTIMENT_COLORS[selectedItem.sentiment]}18`,
+                        color: SENTIMENT_COLORS[selectedItem.sentiment],
+                      }}
+                    >
+                      {selectedItem.sentiment} ({(selectedItem.confidence * 100).toFixed(1)}%)
+                    </span>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Dominant Emotion</h4>
+                    <span className="text-sm font-semibold text-gray-200 flex items-center gap-1.5">
+                      <span>{EMOJI_MAP_JS[selectedItem.emotion || ''] || '😐'}</span>
+                      <span className="capitalize">{selectedItem.emotion || 'None'}</span>
+                    </span>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Detected Language</h4>
+                    <span className="text-sm text-gray-200 font-medium">{selectedItem.language_name || '—'}</span>
+                  </div>
+
+                  <div>
+                    <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Sarcasm Analytics</h4>
+                    {selectedItem.sarcasm_detected ? (
+                      <div className="space-y-1">
+                        <span className="text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded text-xs font-bold inline-flex items-center gap-1">
+                          <AlertTriangle size={12} /> Sarcastic
+                        </span>
+                        {selectedItem.sarcasm_reason && (
+                          <p className="text-xs text-amber-300/80 italic leading-snug">{selectedItem.sarcasm_reason}</p>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-sm text-gray-400">No sarcasm detected</span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex justify-between items-center text-xs text-gray-500 pt-4 border-t border-white/5">
+                  <span>Source: <span className="capitalize text-gray-400">{selectedItem.source_type}</span></span>
+                  <span>Analyzed: {new Date(selectedItem.created_at).toLocaleString()}</span>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 p-5 border-t border-white/10 bg-white/5">
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="px-4 py-2 rounded-lg text-sm font-semibold hover:bg-white/10 text-gray-300 transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    handleDownload(selectedItem.id);
+                    setSelectedItem(null);
+                  }}
+                  disabled={downloadingId === selectedItem.id}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white disabled:opacity-50 transition-colors"
+                >
+                  <Download size={15} /> Download PDF
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 20, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="fixed bottom-6 right-6 z-50 pointer-events-auto"
+          >
+            <div className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-lg backdrop-blur-md border ${
+              toast.type === 'error'
+                ? 'bg-red-500/10 border-red-500/30 text-red-200'
+                : toast.type === 'success'
+                ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-200'
+                : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-200'
+            }`}>
+              <AlertTriangle size={18} className={toast.type === 'error' ? 'text-red-400' : toast.type === 'success' ? 'text-emerald-400' : 'text-indigo-400'} />
+              <span className="text-sm font-medium">{toast.message}</span>
+              <button
+                onClick={() => setToast(null)}
+                className="ml-2 text-xs opacity-70 hover:opacity-100 p-0.5 rounded-full hover:bg-white/10 transition-colors"
+              >
+                &times;
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

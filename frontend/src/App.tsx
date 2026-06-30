@@ -6,6 +6,7 @@ import { UploadCSV } from './pages/UploadCSV';
 import { History } from './pages/History';
 import { Stats } from './pages/Stats';
 import { Login } from './pages/Login';
+import { SocialAnalyzer } from './pages/SocialAnalyzer';
 
 const ProtectedRoute = () => {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
@@ -24,11 +25,13 @@ function App() {
             <Route path="/upload" element={<UploadCSV />} />
             <Route path="/history" element={<History />} />
             <Route path="/stats" element={<Stats />} />
+            <Route path="/social" element={<SocialAnalyzer />} />
           </Route>
         </Route>
       </Routes>
     </BrowserRouter>
   );
 }
+
 
 export default App;

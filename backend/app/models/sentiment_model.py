@@ -29,3 +29,15 @@ class SentimentRecord(Base):
     # Performance metrics
     processing_time_ms = Column(Float, nullable=True)
     inference_time_ms = Column(Float, nullable=True)
+
+    # User association
+    user_id = Column(Integer, nullable=True, index=True)
+
+    # Aspect extraction
+    aspect = Column(String(100), nullable=True)
+
+    # Soft delete
+    is_deleted = Column(Boolean, default=False, nullable=False)
+
+
+

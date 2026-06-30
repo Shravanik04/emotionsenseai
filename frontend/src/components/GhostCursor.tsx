@@ -231,12 +231,15 @@ export const GhostCursor: React.FC<GhostCursorProps> = ({
     []
   );
 
+  /*
   function calculateScale(el: HTMLElement) {
     const r = el.getBoundingClientRect();
     const base = 600;
     const current = Math.min(Math.max(1, r.width), Math.max(1, r.height));
     return Math.max(0.5, Math.min(2.0, current / base));
   }
+  */
+
 
   useEffect(() => {
     const host = containerRef.current;

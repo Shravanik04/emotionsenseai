@@ -8,6 +8,12 @@ from app.core.config import settings
 from app.db.base import Base
 from app.db.session import engine
 
+# Import database models to register with Base.metadata for table creation
+from app.models.sentiment_model import SentimentRecord
+from app.models.user import User
+from app.models.social_analysis import SocialAnalysis, BatchAnalysisRun
+
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -31,7 +37,12 @@ def _migrate_schema():
         "sarcasm_detected": "BOOLEAN DEFAULT 0",
         "sarcasm_confidence": "FLOAT",
         "sarcasm_reason": "TEXT",
+        "user_id": "INTEGER",
+        "aspect": "VARCHAR(100)",
+        "is_deleted": "BOOLEAN DEFAULT 0",
     }
+
+
 
     insp = inspect(engine)
     if "sentiment_records" in insp.get_table_names():
@@ -39,10 +50,31 @@ def _migrate_schema():
         with engine.begin() as conn:
             for col_name, col_type in new_columns.items():
                 if col_name not in existing:
-                    logger.info("Adding missing column: %s", col_name)
+                    logger.info("Adding missing column to sentiment_records: %s", col_name)
                     conn.execute(
                         text(f"ALTER TABLE sentiment_records ADD COLUMN {col_name} {col_type}")
                     )
+
+    if "social_analyses" in insp.get_table_names():
+        existing = {col["name"] for col in insp.get_columns("social_analyses")}
+        with engine.begin() as conn:
+            if "aspect" not in existing:
+                logger.info("Adding missing column to social_analyses: aspect")
+                conn.execute(
+                    text("ALTER TABLE social_analyses ADD COLUMN aspect VARCHAR(100)")
+                )
+            if "is_deleted" not in existing:
+                logger.info("Adding missing column to social_analyses: is_deleted")
+                conn.execute(
+                    text("ALTER TABLE social_analyses ADD COLUMN is_deleted BOOLEAN DEFAULT 0")
+                )
+            if "batch_run_id" not in existing:
+                logger.info("Adding missing column to social_analyses: batch_run_id")
+                conn.execute(
+                    text("ALTER TABLE social_analyses ADD COLUMN batch_run_id INTEGER")
+                )
+
+
 
 # Create tables (if they don't exist)
 Base.metadata.create_all(bind=engine)

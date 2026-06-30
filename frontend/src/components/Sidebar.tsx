@@ -1,14 +1,16 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, FileText, Upload, History, BarChart2, LogOut, Sun, Moon } from 'lucide-react';
+import { LayoutDashboard, FileText, Upload, History, BarChart2, LogOut, Sun, Moon, Share2 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: LayoutDashboard },
   { name: 'Analyze Text', path: '/analyze', icon: FileText },
   { name: 'Batch Analysis', path: '/upload', icon: Upload },
+  { name: 'Social Analyzer', path: '/social', icon: Share2 },
   { name: 'History', path: '/history', icon: History },
   { name: 'Stats', path: '/stats', icon: BarChart2 },
 ];
+
 
 export const Sidebar = () => {
   const location = useLocation();

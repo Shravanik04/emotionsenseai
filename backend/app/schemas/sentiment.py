@@ -134,9 +134,11 @@ class HistoryItem(BaseModel):
     sarcasm_confidence: Optional[float] = None
     sarcasm_reason: Optional[str] = None
     language_code: Optional[str] = None
+    aspect: Optional[str] = None
 
     class Config:
         from_attributes = True
+
 
 # --- Stats ---
 

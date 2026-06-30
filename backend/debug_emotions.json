@@ -1,0 +1,494 @@
+{
+  "sentiment": "mixed",
+  "sentiment_confidence": 0.498,
+  "sentiment_distribution": [
+    {
+      "label": "positive",
+      "score": 0.498
+    },
+    {
+      "label": "neutral",
+      "score": 0.0925
+    },
+    {
+      "label": "negative",
+      "score": 0.4096
+    }
+  ],
+  "emotion": "Possible Emotions",
+  "emotion_confidence": 0.0485,
+  "emotion_emoji": "🤔",
+  "emotion_distribution": [
+    {
+      "label": "sadness",
+      "score": 0.0485
+    },
+    {
+      "label": "disappointment",
+      "score": 0.0441
+    },
+    {
+      "label": "loneliness",
+      "score": 0.0441
+    },
+    {
+      "label": "regret",
+      "score": 0.0441
+    },
+    {
+      "label": "guilt",
+      "score": 0.0441
+    },
+    {
+      "label": "embarrassment",
+      "score": 0.0441
+    },
+    {
+      "label": "nostalgia",
+      "score": 0.0441
+    },
+    {
+      "label": "love",
+      "score": 0.0436
+    },
+    {
+      "label": "anger",
+      "score": 0.0352
+    },
+    {
+      "label": "joy",
+      "score": 0.0324
+    },
+    {
+      "label": "frustration",
+      "score": 0.032
+    },
+    {
+      "label": "jealousy",
+      "score": 0.032
+    },
+    {
+      "label": "happiness",
+      "score": 0.0295
+    },
+    {
+      "label": "excitement",
+      "score": 0.0295
+    },
+    {
+      "label": "gratitude",
+      "score": 0.0295
+    },
+    {
+      "label": "pride",
+      "score": 0.0295
+    },
+    {
+      "label": "hope",
+      "score": 0.0295
+    },
+    {
+      "label": "optimism",
+      "score": 0.0295
+    },
+    {
+      "label": "relief",
+      "score": 0.0295
+    },
+    {
+      "label": "confidence",
+      "score": 0.0295
+    },
+    {
+      "label": "admiration",
+      "score": 0.0295
+    },
+    {
+      "label": "inspiration",
+      "score": 0.0295
+    },
+    {
+      "label": "trust",
+      "score": 0.0295
+    },
+    {
+      "label": "satisfaction",
+      "score": 0.0295
+    },
+    {
+      "label": "determination",
+      "score": 0.0295
+    },
+    {
+      "label": "sympathy",
+      "score": 0.0295
+    },
+    {
+      "label": "compassion",
+      "score": 0.0295
+    },
+    {
+      "label": "disgust",
+      "score": 0.0067
+    },
+    {
+      "label": "fear",
+      "score": 0.0061
+    },
+    {
+      "label": "skepticism",
+      "score": 0.0061
+    },
+    {
+      "label": "anxiety",
+      "score": 0.0055
+    },
+    {
+      "label": "stress",
+      "score": 0.0055
+    },
+    {
+      "label": "overwhelmed",
+      "score": 0.0055
+    },
+    {
+      "label": "neutral",
+      "score": 0.0046
+    },
+    {
+      "label": "curiosity",
+      "score": 0.0042
+    },
+    {
+      "label": "confusion",
+      "score": 0.0042
+    },
+    {
+      "label": "calm",
+      "score": 0.0042
+    },
+    {
+      "label": "thoughtful",
+      "score": 0.0042
+    },
+    {
+      "label": "analytical",
+      "score": 0.0042
+    },
+    {
+      "label": "anticipation",
+      "score": 0.0042
+    },
+    {
+      "label": "surprise",
+      "score": 0.0011
+    },
+    {
+      "label": "awe",
+      "score": 0.001
+    },
+    {
+      "label": "shock",
+      "score": 0.001
+    }
+  ],
+  "language": {
+    "code": "en",
+    "name": "English",
+    "flag": "🇬🇧"
+  },
+  "language_confidence": 0.95,
+  "sarcasm": {
+    "detected": false,
+    "confidence": 0.0,
+    "reason": "No Sarcasm Detected"
+  },
+  "readability": {
+    "score": 63.5,
+    "complexity": "Low (Easy)"
+  },
+  "entities": {
+    "PERSON": [],
+    "GPE": [],
+    "ORG": [],
+    "DATE": []
+  },
+  "sentences": [
+    {
+      "text": "I hate waking up early",
+      "sentiment": "negative",
+      "sentiment_confidence": 0.8065,
+      "emotion": "sadness",
+      "emotion_confidence": 0.0967,
+      "emotion_emoji": "😔",
+      "sarcasm": {
+        "detected": false,
+        "confidence": 0.0,
+        "reason": "No sarcasm detected."
+      }
+    },
+    {
+      "text": "I absolutely love working with my team.",
+      "sentiment": "positive",
+      "sentiment_confidence": 0.9324,
+      "emotion": "love",
+      "emotion_confidence": 0.0848,
+      "emotion_emoji": "❤️",
+      "sarcasm": {
+        "detected": false,
+        "confidence": 0.0,
+        "reason": "No sarcasm detected."
+      }
+    }
+  ],
+  "timeline": [
+    "sadness",
+    "love"
+  ],
+  "keywords": {
+    "top_keywords": [
+      {
+        "word": "hate",
+        "count": 1
+      },
+      {
+        "word": "waking",
+        "count": 1
+      },
+      {
+        "word": "early",
+        "count": 1
+      },
+      {
+        "word": "absolutely",
+        "count": 1
+      },
+      {
+        "word": "love",
+        "count": 1
+      },
+      {
+        "word": "working",
+        "count": 1
+      },
+      {
+        "word": "team",
+        "count": 1
+      },
+      {
+        "word": "hate waking",
+        "count": 1
+      },
+      {
+        "word": "absolutely love working",
+        "count": 1
+      },
+      {
+        "word": "waking up",
+        "count": 1
+      },
+      {
+        "word": "waking up early",
+        "count": 1
+      },
+      {
+        "word": "love working",
+        "count": 1
+      },
+      {
+        "word": "working with",
+        "count": 1
+      }
+    ],
+    "positive_words": [
+      {
+        "word": "love",
+        "count": 1
+      }
+    ],
+    "negative_words": [
+      {
+        "word": "hate",
+        "count": 1
+      }
+    ],
+    "word_cloud": [
+      {
+        "text": "hate waking",
+        "value": 1
+      },
+      {
+        "text": "absolutely love working",
+        "value": 1
+      },
+      {
+        "text": "waking up",
+        "value": 1
+      },
+      {
+        "text": "waking up early",
+        "value": 1
+      },
+      {
+        "text": "love working",
+        "value": 1
+      },
+      {
+        "text": "working with",
+        "value": 1
+      },
+      {
+        "text": "team",
+        "value": 1
+      }
+    ],
+    "word_frequencies": [
+      {
+        "word": "hate",
+        "count": 1
+      },
+      {
+        "word": "waking",
+        "count": 1
+      },
+      {
+        "word": "early",
+        "count": 1
+      },
+      {
+        "word": "absolutely",
+        "count": 1
+      },
+      {
+        "word": "love",
+        "count": 1
+      },
+      {
+        "word": "working",
+        "count": 1
+      },
+      {
+        "word": "team",
+        "count": 1
+      },
+      {
+        "word": "hate waking",
+        "count": 1
+      },
+      {
+        "word": "absolutely love working",
+        "count": 1
+      },
+      {
+        "word": "waking up",
+        "count": 1
+      },
+      {
+        "word": "waking up early",
+        "count": 1
+      },
+      {
+        "word": "love working",
+        "count": 1
+      },
+      {
+        "word": "working with",
+        "count": 1
+      }
+    ]
+  },
+  "insights": {
+    "overall_sentiment_score": 0.0,
+    "dominant_emotion": "sadness",
+    "dominant_emotion_emoji": "😢",
+    "emotional_intensity": "Low",
+    "explanation": "The text expresses two genuine emotions. The author dislikes waking up early but enjoys working with their team. This reflects mixed emotions rather than sarcasm.",
+    "word_count": 13,
+    "char_count": 67,
+    "reading_time_seconds": 3
+  },
+  "inference_time_ms": 1133.78,
+  "word_count": 13,
+  "char_count": 67,
+  "cache_hit": false,
+  "emotion_ranking": [
+    {
+      "label": "sadness",
+      "score": 0.0485
+    },
+    {
+      "label": "disappointment",
+      "score": 0.0441
+    },
+    {
+      "label": "loneliness",
+      "score": 0.0441
+    },
+    {
+      "label": "regret",
+      "score": 0.0441
+    },
+    {
+      "label": "guilt",
+      "score": 0.0441
+    }
+  ],
+  "mixed_sentiment": true,
+  "positive_score": 0.498,
+  "negative_score": 0.4096,
+  "neutral_score": 0.0925,
+  "contradictory_emotions": [],
+  "emotion_summary": "The text expresses two genuine emotions. The author dislikes waking up early but enjoys working with their team. This reflects mixed emotions rather than sarcasm.",
+  "emotion_confidences": {
+    "sadness": 0.0485,
+    "disappointment": 0.0441,
+    "loneliness": 0.0441,
+    "regret": 0.0441,
+    "guilt": 0.0441,
+    "embarrassment": 0.0441,
+    "nostalgia": 0.0441,
+    "love": 0.0436,
+    "anger": 0.0352,
+    "joy": 0.0324,
+    "frustration": 0.032,
+    "jealousy": 0.032,
+    "happiness": 0.0295,
+    "excitement": 0.0295,
+    "gratitude": 0.0295,
+    "pride": 0.0295,
+    "hope": 0.0295,
+    "optimism": 0.0295,
+    "relief": 0.0295,
+    "confidence": 0.0295,
+    "admiration": 0.0295,
+    "inspiration": 0.0295,
+    "trust": 0.0295,
+    "satisfaction": 0.0295,
+    "determination": 0.0295,
+    "sympathy": 0.0295,
+    "compassion": 0.0295,
+    "disgust": 0.0067,
+    "fear": 0.0061,
+    "skepticism": 0.0061,
+    "anxiety": 0.0055,
+    "stress": 0.0055,
+    "overwhelmed": 0.0055,
+    "neutral": 0.0046,
+    "curiosity": 0.0042,
+    "confusion": 0.0042,
+    "calm": 0.0042,
+    "thoughtful": 0.0042,
+    "analytical": 0.0042,
+    "anticipation": 0.0042,
+    "surprise": 0.0011,
+    "awe": 0.001,
+    "shock": 0.001
+  },
+  "top_emotions": [
+    "sadness",
+    "disappointment",
+    "loneliness",
+    "regret",
+    "guilt"
+  ]
+}

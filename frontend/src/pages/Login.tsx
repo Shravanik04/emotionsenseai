@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff, LogIn, AlertCircle, Sun, Moon } from 'lucide-react';
 import { GhostCursor } from '../components/GhostCursor';
 import { useTheme } from '../contexts/ThemeContext';
+import { login } from '../services/api';
 
 export const Login = () => {
   const [email, setEmail] = useState('');
@@ -13,7 +14,7 @@ export const Login = () => {
   const navigate = useNavigate();
   const { isDark, toggle } = useTheme();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     
@@ -30,14 +31,20 @@ export const Login = () => {
 
     setIsLoading(true);
 
-    // Simulate network delay for premium feel loading spinner
-    setTimeout(() => {
+    try {
+      const data = await login(email, password);
       setIsLoading(false);
       localStorage.setItem('isAuthenticated', 'true');
-      localStorage.setItem('userEmail', email);
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('userEmail', data.email);
       navigate('/');
-    }, 1000);
+    } catch (err: any) {
+      setIsLoading(false);
+      const detail = err.response?.data?.detail || 'Failed to authenticate. Please try again.';
+      setError(detail);
+    }
   };
+
 
   return (
     <div className="relative w-full min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center overflow-hidden font-sans select-none transition-colors duration-300">

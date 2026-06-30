@@ -520,10 +520,18 @@ class AnalysisEngine:
         pos_emotions = set(SUB_EMOTIONS["positive"])
         neg_emotions = set(SUB_EMOTIONS["negative"])
         
-        has_pos_emotion = any(e["label"] in pos_emotions and e["score"] >= 0.15 for e in avg_emotions)
-        has_neg_emotion = any(e["label"] in neg_emotions and e["score"] >= 0.15 for e in avg_emotions)
+        has_pos_emotion = any(e["label"] in pos_emotions and e["score"] >= 0.25 for e in avg_emotions)
+        has_neg_emotion = any(e["label"] in neg_emotions and e["score"] >= 0.25 for e in avg_emotions)
 
-        if (overall_pos_score >= 0.20 and overall_neg_score >= 0.20) or (has_pos_emotion and has_neg_emotion):
+        # Mixed sentiment requires GENUINE ambiguity:
+        # - Both polarity scores must be strong (>= 0.35)
+        # - The gap between them must be narrow (< 0.15)
+        # - OR both positive and negative emotions are strongly present
+        score_gap = abs(overall_pos_score - overall_neg_score)
+        scores_both_strong = (overall_pos_score >= 0.35 and overall_neg_score >= 0.35 and score_gap < 0.15)
+        emotions_both_strong = (has_pos_emotion and has_neg_emotion)
+        
+        if scores_both_strong or (emotions_both_strong and overall_pos_score >= 0.30 and overall_neg_score >= 0.30):
             overall_sentiment = "mixed"
             overall_sentiment_conf = max(overall_pos_score, overall_neg_score)
             mixed_sentiment = True
